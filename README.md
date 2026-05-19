@@ -1,126 +1,127 @@
-# PneumoMamba  
-**PneumoMamba: A novel Mamba and CNN Dual-Path Network for Computer-Aided Diagnosis of Pneumonia using Omnidirectional Feature Extraction and Multi-Scale Asymmetric Convolution**
+# PneumonMamba
 
-This repository contains the official project page for **PneumoMamba**, a novel deep learning framework for computer-aided diagnosis of pneumonia from chest X-ray (CXR) images.  
-The full implementation will be released after the associated paper is accepted.
+A novel Mamba-based Network for Computer-Aided Diagnosis of Pneumonia with Omnidirectional Scanning and Multi-Scale Convolution.
 
----
+## Overview
 
-## 🔬 Overview
+PneumonMamba is a deep learning framework based on the State Space Model (SSM) for automated pneumonia classification from chest X-ray images. The model introduces three key innovations:
 
-**PneumoMamba** is a dual-path neural network that integrates:
+1. **Omnidirectional State Space Model (OSSM)**: An 8-directional scanning mechanism that captures spatial dependencies from all orientations, overcoming the unidirectional limitation of vanilla Mamba.
 
-- **Mamba (Selective State Space Model)** for long-range dependency modeling  
-- **Convolutional Neural Networks (CNNs)** for fine-grained local feature extraction  
+2. **Multi-scale Dilated Residual Module (MDR)**: Employs asymmetric convolution decomposition with varying dilation rates to extract multi-scale contextual features efficiently.
 
-The model is designed to overcome the limitations of traditional CNNs (limited global context) and Transformers (high computational cost), providing an efficient and accurate framework for pneumonia classification.
+3. **Dual Attention Module (DAM)**: Combines channel attention with multi-scale spatial attention using depthwise separable convolutions at different kernel sizes.
 
-PneumoMamba achieves **state-of-the-art performance** on multi-class pneumonia classification, including:
-- COVID-19
-- Viral Pneumonia
-- Lung Opacity
-- Normal
+## Project Structure
 
-On the Pneumonia-CXR dataset, PneumoMamba reaches a **test accuracy of 94.94%**, outperforming CNN-, Transformer-, and Mamba-based baselines.
+```
+PneumonMamba/
+├── checkpoints/          # Saved model weights
+├── configs/              # Training configurations
+│   └── default.py
+├── data/                 # Dataset directory (not included)
+├── docs/                 # Documentation
+├── models/               # Model architecture
+│   ├── __init__.py
+│   ├── pneumonmamba.py   # Main model (VSSM)
+│   └── csms6s_plus.py    # Cross-scan operations
+├── results/              # Training results and logs
+├── scripts/              # Training and evaluation scripts
+│   └── train.py
+├── utils/                # Utility modules
+│   ├── __init__.py
+│   ├── dual_attention.py # Dual Attention Module (DAM)
+│   ├── multi_scale_conv.py # Multi-scale Dilated Residual (MDR)
+│   └── wtconv2d.py       # Wavelet Transform Convolution
+├── README.md
+└── requirements.txt
+```
 
----
+## Requirements
 
-## 🧠 Key Innovations
+- Python >= 3.8
+- PyTorch >= 1.13.0
+- CUDA >= 11.7
 
-PneumoMamba introduces several novel architectural components:
+Install dependencies:
 
-### 1. Conv–OSS Dual-Path Block
-A lightweight dual-branch module that:
-- Uses CNNs to extract local texture and edge features  
-- Uses Mamba-based OSS modules to model global spatial dependencies  
+```bash
+pip install -r requirements.txt
+```
 
-This enables simultaneous learning of **local details and global context**.
+## Dataset
 
----
+The model is designed for chest X-ray classification. Organize your dataset as follows:
 
-### 2. Omnidirectional Selective Scan Module (OSSM)
-An advanced Mamba-based visual module that includes:
-- **8DScan**: Scans feature maps from **8 directions** (horizontal, vertical, and diagonals)
-- **Selective State Space (S6)** for adaptive long-range modeling
-- **Multi-Scale Asymmetric Convolution (MSAConv)** for enriched spatial representation
+```
+data/
+├── train/
+│   ├── COVID/
+│   ├── Lung_Opacity/
+│   ├── Normal/
+│   └── Viral_Pneumonia/
+├── val/
+│   ├── COVID/
+│   ├── ...
+└── test/
+    ├── COVID/
+    └── ...
+```
 
-This allows PneumoMamba to capture pneumonia patterns from **all spatial orientations**.
+## Training
 
----
+```bash
+cd scripts
+python train.py \
+    --data_dir ../data \
+    --num_classes 4 \
+    --batch_size 128 \
+    --epochs 500 \
+    --lr 0.0001 \
+    --model_size tiny \
+    --save_path ../checkpoints/best_model.pth
+```
 
-### 3. Focused Feature Module (FFM)
-A dual-attention refinement block that integrates:
-- Channel Attention
-- Spatial Attention
+### Model Variants
 
-FFM highlights subtle pneumonia-related regions and suppresses irrelevant background, improving both **accuracy and interpretability**.
+| Variant | Depths | Dims | Parameters |
+|---------|--------|------|------------|
+| Tiny    | [2,2,4,2] | [96,192,384,768] | ~25M |
+| Small   | [2,2,8,2] | [96,192,384,768] | ~44M |
+| Base    | [2,2,12,2] | [128,256,512,1024] | ~88M |
 
----
+## Architecture
 
-## 📊 Experimental Results
+The PneumonMamba architecture follows a hierarchical encoder design:
 
-PneumoMamba was evaluated on a large-scale chest X-ray dataset containing:
+1. **Patch Embedding**: Converts input images to patch tokens
+2. **VSS Layers**: Each layer contains SS_Conv_SSM blocks that split features into two branches:
+   - **Convolutional branch**: Standard 3x3 convolutions for local feature extraction
+   - **SSM branch**: GroupMambaLayer with 8-directional scanning for global context
+3. **Channel Shuffle**: Mixes information between the two branches
+4. **Patch Merging**: Downsamples between stages
+5. **Classification Head**: Global average pooling + linear classifier
 
-- Viral Pneumonia  
-- COVID-19  
-- Lung Opacity  
-- Normal  
+## Citation
 
-### Main Results
+If you find this work useful for your research, please consider citing our paper:
 
-| Model | Test Accuracy (%) |
-|------|------------------|
-| ConvNeXt V2 | 93.60 |
-| ViT | 88.26 |
-| DeiT | 89.18 |
-| PVT V2 | 93.29 |
-| VMamba | 93.20 |
-| MedMamba | 93.60 |
-| **PneumoMamba (Ours)** | **94.94** |
+```bibtex
+@article{chen2026pneumomamba,
+  title={PneumoMamba: A Novel Mamba and CNN Dual-Path Network for Computer-Aided Diagnosis of Pneumonia Using Omnidirectional Feature Extraction and Multi-Scale Asymmetric Convolution},
+  author={Chen, Meng and Gu, Yu and Wang, ManSheng and Yang, Lidong and Zhang, Baohua and Li, Jianjun and Liu, Xin and Hao, Juan and Ma, Hao and Zhang, Wei and Tang, Siyuan and He, Qun},
+  journal={International Journal of Imaging Systems and Technology},
+  year={2026},
+  publisher={Wiley},
+  doi={10.1002/ima.70367}
+}
+```
 
-The proposed method consistently outperforms CNN, Transformer, and Mamba-based baselines.
+**Paper link**: [https://doi.org/10.1002/ima.70367](https://doi.org/10.1002/ima.70367)
 
----
+## Acknowledgements
 
-## 🧪 Generalization Ability
-
-PneumoMamba was also evaluated on an external dataset (W. Ning et al.) that was not used during training:
-
-| Metric | Score (%) |
-|--------|-----------|
-| Accuracy | 94.21 |
-| F1-score | 94.20 |
-| Sensitivity | 94.21 |
-| Precision | 94.21 |
-
-These results demonstrate **strong robustness and generalization**.
-
----
-
-## 🧩 Model Interpretability
-
-We employ **LayerCAM** to visualize model attention.  
-PneumoMamba produces highly localized and clinically meaningful activation maps for different pneumonia types, accurately highlighting:
-
-- COVID-19 ground-glass opacities  
-- Viral pneumonia lesions  
-- Lung opacity regions  
-
-This provides important interpretability for clinical decision support.
-
----
-
-## 📦 Code Availability
-
-This repository currently serves as the **official project page** for PneumoMamba.
-
-> 🚧 **The full source code, pretrained models, and training scripts will be released after the paper is officially accepted.**
-
-This ensures compliance with journal and conference submission policies.
-
----
-
-## 📌 Citation
-
-If you find this work useful, please cite our paper:
-
+This work builds upon:
+- [Mamba](https://github.com/state-spaces/mamba) - Selective State Space Model
+- [VMamba](https://github.com/MzeroMiko/VMamba) - Visual State Space Model
+- [WTConv2d](https://github.com/BGU-CS-VIL/WTConv2d) - Wavelet Transform Convolution
